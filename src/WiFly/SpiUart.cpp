@@ -54,7 +54,11 @@ void SpiUartDevice::begin(unsigned long baudrate /* default value */) {
   /*
         
    */
-  SpiDevice::begin();
+  SPI.begin();
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setDataMode(SPI_MODE0);
+  SPI.setClockDivider(SPI_CLOCK_DIV2);
+
   initUart(baudrate);
 }
 
@@ -129,10 +133,10 @@ void SpiUartDevice::writeRegister(byte registerAddress, byte data) {
     Write <data> byte to the SC16IS750 register <registerAddress>.
 
    */
-  select();
-  transfer(registerAddress);
-  transfer(data);
-  deselect();
+  digitalWrite(SS, LOW);
+  SPI.transfer(registerAddress);
+  SPI.transfer(data);
+  digitalWrite(SS, HIGH);
 }
 
 
@@ -147,10 +151,11 @@ byte SpiUartDevice::readRegister(byte registerAddress) {
   
   char result;
 
-  select();
-  transfer(SPI_READ_MODE_FLAG | registerAddress);
-  result = transfer(SPI_DUMMY_BYTE);
-  deselect();
+  digitalWrite(SS, LOW);
+  SPI.transfer(SPI_READ_MODE_FLAG | registerAddress);
+  result = SPI.transfer(SPI_DUMMY_BYTE);
+  digitalWrite(SS, HIGH);
+
   return result;  
 }
 
@@ -215,27 +220,6 @@ size_t SpiUartDevice::write(const char *str, size_t size) {
 		// (But apparently still not slow enough to ensure delivery.)
 	};
 }
-
-#if ENABLE_BULK_TRANSFERS
-void SpiUartDevice::write(const uint8_t *buffer, size_t size) {
-  /*
-  
-    Write buffer to UART.
- 
-   */
-  select();
-  transfer(THR); // TODO: Change this when we modify register addresses? (Even though it's 0x00.) 
-
-  while(size > 16) {
-    transfer_bulk(buffer, 16);
-    size -= 16;
-    buffer += 16;
-  }
-  transfer_bulk(buffer, size);
-
-  deselect();
-}
-#endif
 
 void SpiUartDevice::flush() {
   /*
