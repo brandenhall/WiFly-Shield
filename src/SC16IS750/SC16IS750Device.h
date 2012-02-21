@@ -1,23 +1,8 @@
 
-#ifndef __SPIUART_H__
-#define __SPIUART_H__
+#ifndef __SC16IS750_DEVICE_H__
+#define __SC16IS750_DEVICE_H__
 
-#include "Configuration.h"
 #include <SPI.h>
-
-// #include "_Spi.h"
-
-
-// Until we implement a bulk transfer method that takes into account
-// the available space in the transmit buffer we will disable bulk transfers.
-// The present method of bulk transfers risks overflowing the SPI UART
-// transmit buffer.
-// Disabling the transfers means we use the standard byte-at-time routine
-// from the Print class.
-// This isn't a big issue at 9600 baud at least because sending things
-// a byte at a time doesn't slow us down noticeably.
-// TODO: Implement better bulk transfer method
-#define ENABLE_BULK_TRANSFERS 0
 
 // SC16IS750 Register definitions
 // TODO: Don't bit shift these here, do it in the read/write register routines
@@ -55,7 +40,7 @@
 #define BAUD_RATE_DEFAULT 9600 // WiFly default baudrate
 
 
-class SpiUartDevice : public Stream {
+class SC16IS750Device : public Stream {
   
   public:
     void begin(unsigned long baudrate = BAUD_RATE_DEFAULT);
@@ -67,12 +52,13 @@ class SpiUartDevice : public Stream {
 
     void flush();
 
-//required for Stream
+    //required for Stream
     int peek() {return 0;};
 
     // These are specific to the SPI UART
     void ioSetDirection(unsigned char bits);
     void ioSetState(unsigned char bits);
+    boolean reboot();
   
   private:
     void writeRegister(byte registerAddress, byte data);
@@ -82,6 +68,8 @@ class SpiUartDevice : public Stream {
     void setBaudRate(unsigned long baudrate);
     boolean uartConnected();
 };
+
+extern SC16IS750Device SC16IS750;
 
 #endif 
 

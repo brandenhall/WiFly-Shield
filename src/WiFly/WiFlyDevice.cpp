@@ -6,6 +6,8 @@
 #include "Debug.h"
 
 
+#define REBOOT hardwareReboot
+
 boolean WiFlyDevice::findInResponse(const char *toMatch,
                                     unsigned int timeOut = 1000) {
   /*
@@ -189,14 +191,12 @@ void WiFlyDevice::waitForResponse(const char *toMatch) {
 
 
 
-WiFlyDevice::WiFlyDevice(SpiUartDevice& theUart) : SPIuart (theUart) {
+WiFlyDevice::WiFlyDevice() {
   /*
 
     Note: Supplied UART should/need not have been initialised first.
 
    */
-  bDifferentUart = 0;
-  uart = &SPIuart;
   // The WiFly requires the server port to be set between the `reboot`
   // and `join` commands so we go for a "useful" default first.
   serverPort = DEFAULT_SERVER_PORT;
@@ -207,9 +207,7 @@ WiFlyDevice::WiFlyDevice(SpiUartDevice& theUart) : SPIuart (theUart) {
 //       and/or allow the select pin to be supplied.
 
 
-void  WiFlyDevice::setUart(Stream* newUart)
-{
-  bDifferentUart = 1;
+void  WiFlyDevice::setUart(Stream* newUart) {
   uart = newUart;
 }
 
@@ -222,7 +220,6 @@ void WiFlyDevice::begin(boolean adhocMode) {
    */
   DEBUG_LOG(1, "Entered WiFlyDevice::begin()");
 
-  if (!bDifferentUart) SPIuart.begin();
   reboot(); // Reboot to get device into known state
   //requireFlowControl();
   setConfiguration(adhocMode);
@@ -265,27 +262,6 @@ boolean WiFlyDevice::softwareReboot(boolean isAfterBoot = true) {
 
   return false;
 }
-
-boolean WiFlyDevice::hardwareReboot() {
-  /*
-   */
-  if (!bDifferentUart)
-  {
-    SPIuart.ioSetDirection(0b00000010);
-    SPIuart.ioSetState(0b00000000);
-    delay(1);
-    SPIuart.ioSetState(0b00000010);
-    return findInResponse("*READY*", 2000);
-  }
-  return softwareReboot();
-}
-
-
-#if USE_HARDWARE_RESET
-#define REBOOT hardwareReboot
-#else
-#define REBOOT softwareReboot
-#endif
 
 void WiFlyDevice::reboot() {
   /*
@@ -632,7 +608,8 @@ boolean WiFlyDevice::configure(byte option, unsigned long value) {
       delay(10); // If we don't have this here when we specify the
                  // baud as a number rather than a string it seems to
                  // fail. TODO: Find out why.
-      SPIuart.begin(value);
+//      SPIuart.begin(value);
+
       // For some reason the following check fails if it occurs before
       // the change of SPI UART serial rate above--even though the
       // documentation says the AOK is returned at the old baud
@@ -691,8 +668,5 @@ long WiFlyDevice::getTime(){
   return strtol(buffer, NULL, 0);
 }
 
-
-
 // Preinstantiate required objects
-SpiUartDevice SpiSerial;
-WiFlyDevice WiFly(SpiSerial);
+WiFlyDevice WiFly;

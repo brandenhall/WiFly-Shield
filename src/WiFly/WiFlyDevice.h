@@ -7,7 +7,7 @@
 
 class WiFlyDevice {
   public:
-    WiFlyDevice(SpiUartDevice& theUart);
+    WiFlyDevice();
 
     void setUart(Stream* newUart);
     void begin();
@@ -25,7 +25,6 @@ class WiFlyDevice {
     const char * ip();
     
   private:
-    SpiUartDevice& SPIuart;
     Stream* uart;
     boolean bDifferentUart;
     // Okay, this really sucks, but at the moment it works.

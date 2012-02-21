@@ -1,5 +1,5 @@
 
-#include "SpiUart.h"
+#include "SC16IS750.h"
 
 // See section 8.10 of the datasheet for definitions
 // of bits in the Enhanced Features Register (EFR)
@@ -16,21 +16,14 @@
 // The original crystal frequency used on the board (~12MHz) didn't
 // give a good range of baud rates so around July 2010 the crystal
 // was replaced with a better frequency (~14MHz).
-#ifndef USE_14_MHZ_CRYSTAL
 #define USE_14_MHZ_CRYSTAL true // true (14MHz) , false (12 MHz)
-#endif
-
-#if USE_14_MHZ_CRYSTAL
 #define XTAL_FREQUENCY 14745600UL // On-board crystal (New mid-2010 Version)
-#else
-#define XTAL_FREQUENCY 12288000UL // On-board crystal (Original Version)
-#endif
+
 
 // See datasheet section 7.8 for configuring the
 // "Programmable baud rate generator"
 #define PRESCALER 1 // Default prescaler after reset
 #define BAUD_RATE_DIVISOR(baud) ((XTAL_FREQUENCY/PRESCALER)/(baud*16UL))
-
 
 // TODO: Handle configuration better
 // SC16IS750 register values
@@ -50,7 +43,7 @@ struct SPI_UART_cfg SPI_Uart_config = {
 };
 
 
-void SpiUartDevice::begin(unsigned long baudrate /* default value */) {
+void SC16IS750Device::begin(unsigned long baudrate /* default value */) {
   /*
         
    */
@@ -63,7 +56,7 @@ void SpiUartDevice::begin(unsigned long baudrate /* default value */) {
 }
 
 
-void SpiUartDevice::initUart(unsigned long baudrate) {
+void SC16IS750Device::initUart(unsigned long baudrate) {
   /*
     
     Initialise the UART.
@@ -84,7 +77,7 @@ void SpiUartDevice::initUart(unsigned long baudrate) {
 }
 
 
-void SpiUartDevice::setBaudRate(unsigned long baudrate) {
+void SC16IS750Device::setBaudRate(unsigned long baudrate) {
   /*
    */
   unsigned long divisor = BAUD_RATE_DIVISOR(baudrate);
@@ -95,7 +88,7 @@ void SpiUartDevice::setBaudRate(unsigned long baudrate) {
 }
 
 
-void SpiUartDevice::configureUart(unsigned long baudrate) {
+void SC16IS750Device::configureUart(unsigned long baudrate) {
   /*
   
      Configure the settings of the UART.
@@ -112,7 +105,7 @@ void SpiUartDevice::configureUart(unsigned long baudrate) {
 }
 
 
-boolean SpiUartDevice::uartConnected() {
+boolean SC16IS750Device::uartConnected() {
   /*
   
      Check that UART is connected and operational.
@@ -127,7 +120,7 @@ boolean SpiUartDevice::uartConnected() {
 }
 
 
-void SpiUartDevice::writeRegister(byte registerAddress, byte data) {
+void SC16IS750Device::writeRegister(byte registerAddress, byte data) {
   /*
 
     Write <data> byte to the SC16IS750 register <registerAddress>.
@@ -140,7 +133,7 @@ void SpiUartDevice::writeRegister(byte registerAddress, byte data) {
 }
 
 
-byte SpiUartDevice::readRegister(byte registerAddress) {
+byte SC16IS750Device::readRegister(byte registerAddress) {
   /*
   
     Read byte from SC16IS750 register at <registerAddress>.
@@ -160,7 +153,7 @@ byte SpiUartDevice::readRegister(byte registerAddress) {
 }
 
 
-int SpiUartDevice::available() {
+int SC16IS750Device::available() {
   /*
   
     Get the number of bytes (characters) available for reading.
@@ -176,7 +169,7 @@ int SpiUartDevice::available() {
 }
 
 
-int SpiUartDevice::read() {
+int SC16IS750Device::read() {
   /*
   
     Read byte from UART.
@@ -194,7 +187,7 @@ int SpiUartDevice::read() {
 }
 
 
-size_t SpiUartDevice::write(byte value) {
+size_t SC16IS750Device::write(byte value) {
   /*
   
     Write byte to UART.
@@ -207,7 +200,7 @@ size_t SpiUartDevice::write(byte value) {
 }
 
 
-size_t SpiUartDevice::write(const char *str, size_t size) {
+size_t SC16IS750Device::write(const char *str, size_t size) {
   /*
   
     Write string to UART.
@@ -221,7 +214,7 @@ size_t SpiUartDevice::write(const char *str, size_t size) {
 	};
 }
 
-void SpiUartDevice::flush() {
+void SC16IS750Device::flush() {
   /*
   
     Flush characters from SC16IS750 receive buffer.
@@ -237,15 +230,28 @@ void SpiUartDevice::flush() {
 }
 
 
-void SpiUartDevice::ioSetDirection(unsigned char bits) {
+void SC16IS750Device::ioSetDirection(unsigned char bits) {
   /*
    */
   writeRegister(IODIR, bits);
 }
 
 
-void SpiUartDevice::ioSetState(unsigned char bits) {
+void SC16IS750Device::ioSetState(unsigned char bits) {
   /*
    */
   writeRegister(IOSTATE, bits);
 }
+
+boolean SC16IS750Device::reboot() {
+  ioSetDirection(0b00000010);
+  ioSetState(0b00000000);
+  delay(1);
+  ioSetState(0b00000010);
+
+  //TODO: Handle hard reboot scenario
+//    return findInResponse("*READY*", 2000);
+  return true;
+}
+
+SC16IS750Device SC16IS750;
