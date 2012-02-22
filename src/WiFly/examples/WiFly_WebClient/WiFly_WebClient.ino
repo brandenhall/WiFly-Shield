@@ -1,7 +1,9 @@
 
 // (Based on Ethernet's WebClient Example)
 
-#include "WiFly.h"
+#include <SPI.h>
+#include <SC16IS750.h>
+#include <WiFly.h>
 
 
 #include "Credentials.h"
@@ -16,7 +18,9 @@ WiFlyClient client("google.com", 80);
 void setup() {
   
   Serial.begin(9600);
-
+  SC16IS750.begin();
+  
+  WiFly.setUart(&SC16IS750);
   WiFly.begin();
   
   if (!WiFly.join(ssid, passphrase)) {

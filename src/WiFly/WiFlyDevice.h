@@ -1,9 +1,10 @@
 #ifndef __WIFLY_DEVICE_H__
 #define __WIFLY_DEVICE_H__
 
-#include "Configuration.h"
-
 #define DEFAULT_SERVER_PORT 80
+
+#include <Arduino.h>
+#include <Stream.h>
 
 class WiFlyDevice {
   public:
@@ -51,7 +52,7 @@ class WiFlyDevice {
     //       they are first?
     void attemptSwitchToCommandMode();
     void switchToCommandMode();
-    void reboot();
+    boolean reboot();
     void requireFlowControl();
     void setConfiguration(boolean adhocMode);
 	void setAdhocParams();
@@ -67,8 +68,6 @@ class WiFlyDevice {
 
     boolean findInResponse(const char *toMatch, unsigned int timeOut);
     boolean enterCommandMode(boolean isAfterBoot = false);
-    boolean softwareReboot(boolean isAfterBoot);
-    boolean hardwareReboot();
 
     friend class WiFlyClient;
     friend class WiFlyServer;

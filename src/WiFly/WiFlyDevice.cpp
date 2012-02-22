@@ -231,7 +231,7 @@ void WiFlyDevice::begin(boolean adhocMode) {
 
 #define SOFTWARE_REBOOT_RETRY_ATTEMPTS 5
 
-boolean WiFlyDevice::softwareReboot(boolean isAfterBoot = true) {
+boolean WiFlyDevice::reboot() {
   /*
 
    */
@@ -244,7 +244,7 @@ boolean WiFlyDevice::softwareReboot(boolean isAfterBoot = true) {
 
     // TODO: Have the post-boot delay here rather than in enterCommandMode()?
 
-    if (!enterCommandMode(isAfterBoot)) {
+    if (!enterCommandMode(true)) {
       return false; // If the included retries have failed we give up
     }
 
@@ -262,19 +262,6 @@ boolean WiFlyDevice::softwareReboot(boolean isAfterBoot = true) {
 
   return false;
 }
-
-void WiFlyDevice::reboot() {
-  /*
-   */
-
-  DEBUG_LOG(1, "Entered reboot");
-
-  if (!REBOOT()) {
-    DEBUG_LOG(1, "Failed to reboot. Halting.");
-    while (1) {}; // Hang. TODO: Handle differently?
-  }
-}
-
 
 boolean WiFlyDevice::sendCommand(const __FlashStringHelper *command,
                                  boolean isMultipartCommand = false,
