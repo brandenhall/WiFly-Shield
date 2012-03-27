@@ -1,76 +1,56 @@
 #ifndef __WIFLY_DEVICE_H__
 #define __WIFLY_DEVICE_H__
 
-#define DEFAULT_SERVER_PORT 80
-
 #include <Arduino.h>
 #include <Stream.h>
+#include "String.h"
+#include "IPAddress.h"
 
 class WiFlyDevice {
   public:
     WiFlyDevice();
 
-    void setUart(Stream* newUart);
     void begin();
-    void begin(boolean adhocMode);
-	boolean createAdHocNetwork(const char *ssid);
+    void setUart(Stream* newUart);
 
-    boolean join(const char *ssid);
-    boolean join(const char *ssid, const char *passphrase, 
-                 boolean isWPA = true);
+    void sendBareCommand(const __FlashStringHelper* command);
+    String getCommandResponse(const __FlashStringHelper* command);
 
-    boolean configure(byte option, unsigned long value);
+    boolean sendCommand(const __FlashStringHelper* command);
+    boolean sendCommand(const __FlashStringHelper* command, char* response);
+    boolean sendCommand(const __FlashStringHelper* command, char* response, int timeout);
+    boolean sendCommand(const __FlashStringHelper* command, char* response, int timeout, boolean exit);
 
-	long getTime();
+    void sendBareCommand(char* command);
+    String getCommandResponse(char* command);
 
-    const char * ip();
-    
-  private:
-    Stream* uart;
-    boolean bDifferentUart;
-    // Okay, this really sucks, but at the moment it works.
-    // The problem is that we have to keep track of an active server connection
-    // but AFAICT due to the way the WebClient example is written
-    // we can't store a useful reference in the server instance
-    // to an active client instance because the client object gets copied
-    // when it's returned from Server.available(). This means that
-    // the state changes in the client object's Client.stop() method
-    // never get propagated to the Server's stored active client.
-    // Blah, blah, hand-wavy singleton mention. Trying to store the reference
-    // to the active client connection here runs into apparent circular
-    // reference issues with header includes. So in an effort to get this out
-    // the door we just share whether or not the current "active client"
-    // that the server has a stored reference is actually active or not.
-    // (Yeah, nice.)
-    // TODO: Handle this better.
-    boolean serverConnectionActive;
+    boolean sendCommand(char* command);
+    boolean sendCommand(char* command, char* response);
+    boolean sendCommand(char* command, char* response, int timeout);
+    boolean sendCommand(char* command, char* response, int timeout, boolean exit);
 
-    uint16_t serverPort;      
-    
-    // TODO: Should these be part of a different class?
-    // TODO: Should all methods that need to be in command mode ensure
-    //       they are first?
-    void attemptSwitchToCommandMode();
-    void switchToCommandMode();
+    void enterCommandMode();
+    void exitCommandMode();    
+
+    boolean waitForResponse(char* response);
+    boolean waitForResponse(char* response, int timeout);
+
+    IPAddress localIP();
+    IPAddress subnetMask();
+    IPAddress gatewayIP();
+    IPAddress dnsServerIP();
+
     boolean reboot();
-    void requireFlowControl();
-    void setConfiguration(boolean adhocMode);
-	void setAdhocParams();
-    boolean sendCommand(const char *command,
-                        boolean isMultipartCommand, // Has default value
-                        const char *expectedResponse); // Has default value
-    boolean sendCommand(const __FlashStringHelper *command,
-                        boolean isMultipartCommand, // Has default value
-                        const char *expectedResponse); // Has default value
-    void waitForResponse(const char *toMatch);
-    void skipRemainderOfResponse();
-    boolean responseMatched(const char *toMatch);
 
-    boolean findInResponse(const char *toMatch, unsigned int timeOut);
-    boolean enterCommandMode(boolean isAfterBoot = false);
+    Stream* uart;
+    char* firmwareVersion;
+    boolean serverConnected;
 
-    friend class WiFlyClient;
-    friend class WiFlyServer;
+  protected:
+    IPAddress stringToIPAddress(String str);
+
+  private:
+    boolean commandModeFlag;
 };
 
 #endif

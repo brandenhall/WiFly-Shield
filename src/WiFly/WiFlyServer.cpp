@@ -1,65 +1,49 @@
 #include "WiFly.h"
-
-// NOTE: Arbitrary cast to avoid constructor ambiguity.
-// TODO: Handle this a different way so we're not using
-//       NULL pointers all over the place?
-#define NO_CLIENT WiFlyClient ((uint8_t*) NULL, 0)
-
-WiFlyServer::WiFlyServer(uint16_t port) : activeClient(NO_CLIENT){
-  /*
-   */
-  _port = port;
-
-  // TODO: Handle this better.
-  // NOTE: This only works if the server object was created globally.
-  WiFly.serverPort = port;
-}
-
-void WiFlyServer::begin() {
-  /*
-   */
-  // TODO: Send command to enable server functionality.
-}
+#include "WiFlyClient.h"
+#include "WiFlyServer.h"
 
 #define TOKEN_MATCH_OPEN "*OPEN*"
 
-WiFlyClient& WiFlyServer::available() {
-  /*
-   */
+WiFlyServer::WiFlyServer(uint16_t port) {
+  _port = port;
+}
 
-  // TODO: Ensure no active non-server client connection.
+void WiFlyServer::begin() {
+  String cmd = "set ip localport ";
+  cmd += _port;
 
-  if (!WiFly.serverConnectionActive) {
-    activeClient._port = 0;
-  }
+  int len = cmd.length() + 1;
+  char cmdbuf[len];
+  cmd.toCharArray(cmdbuf, len);
 
-  // TODO: Ensure begin() has been called.
+  WiFly.sendCommand(cmdbuf);
+}
 
-  // Return active server connection if present
-  if (!activeClient) {
-    // TODO: Handle this better
+WiFlyClient WiFlyServer::available() {
+
+  if (!WiFly.serverConnected) {
+
+    activeClient.reset();
+
     if (WiFly.uart->available() >= strlen(TOKEN_MATCH_OPEN)) {
-      if (WiFly.responseMatched(TOKEN_MATCH_OPEN)) {
-	// The following values indicate that the connection was
-	// created when acting as a server.
+      if (WiFly.waitForResponse(TOKEN_MATCH_OPEN, 1)) {
 
-	// TODO: Work out why this alternate instantiation code doesn't work:
-	//activeClient = WiFlyClient((uint8_t*) NULL, _port);
+        WiFly.serverConnected = true;
+        activeClient.connect();
 
-	activeClient._port = _port;
-	activeClient._domain = NULL;
-	activeClient._ip = NULL;
-
-	activeClient.connect();
-	WiFly.serverConnectionActive = true;
       } else {
-	// Ignore other feedback from the WiFly module.
-	// TODO: Should we check we're not ditching a connect accidentally?
-	//WiFly.skipRemainderOfResponse();
-	WiFly.uart->flush();
+        WiFly.uart->flush();
       }
     }
   }
 
   return activeClient;
+}
+
+size_t WiFlyServer::write(uint8_t b) {
+  return write(&b, 1);
+}
+
+size_t WiFlyServer::write(const uint8_t *buffer, size_t size) {
+  return activeClient.write(buffer, size);
 }

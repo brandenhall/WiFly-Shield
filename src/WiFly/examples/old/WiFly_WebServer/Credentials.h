@@ -3,6 +3,6 @@
 
 // Wifi parameters
 char passphrase[] = "passphrase";
-char ssid[] = "automata_arduino";
+char ssid[] = "ssid";
 
 #endif

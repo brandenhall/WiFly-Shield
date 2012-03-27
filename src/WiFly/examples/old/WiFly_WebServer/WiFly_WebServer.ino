@@ -6,36 +6,16 @@
  * A simple web server that shows the value of the analog input pins.
  */
 
-#include <SPI.h>
-#include <SC16IS750.h>
-#include <WiFly.h>
+#include "WiFly.h"
+#include "Credentials.h"
+
 
 WiFlyServer server(80);
 
 void setup() {
-  SC16IS750.begin();
-  
-  WiFly.setUart(&SC16IS750);
-  
   WiFly.begin();
-  server.begin();
-  
-  WiFly.sendCommand(F("set wlan auth 0"));
-  WiFly.sendCommand(F("set wlan channel 0"));
-  WiFly.sendCommand(F("set ip dhcp 1"));
-  WiFly.sendCommand(F("set comm remote 0"));
-  WiFly.sendCommand(F("set comm open *OPEN*"));
-  WiFly.sendCommand(F("set comm close *CLOS*"));
 
-  if (!WiFly.sendCommand(F("join automata_arduino"), "Associated!", 20000, false)) {
-    Serial.println(F("Association failed."));
-    while (1) {
-      // Hang on failure.
-    }
-  }
-  
-  if (!WiFly.waitForResponse("DHCP in", 10000)) {
-    Serial.println(F("DHCP failed."));
+  if (!WiFly.join(ssid, passphrase)) {
     while (1) {
       // Hang on failure.
     }
@@ -43,29 +23,23 @@ void setup() {
 
   Serial.begin(9600);
   Serial.print("IP: ");
-  Serial.println(WiFly.localIP());
+  Serial.println(WiFly.ip());
   
   server.begin();
 }
 
 void loop() {
   WiFlyClient client = server.available();
-  
-  delay(100);
-  
-  if (client.connected()) {
-    
+  if (client) {
     // an http request ends with a blank line
     boolean current_line_is_blank = true;
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
-
         // if we've gotten to the end of the line (received a newline
         // character) and the line is blank, the http request has ended,
         // so we can send a reply
         if (c == '\n' && current_line_is_blank) {
-          
           // send a standard http response header
           client.println("HTTP/1.1 200 OK");
           client.println("Content-Type: text/html");

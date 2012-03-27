@@ -6,9 +6,6 @@
 #include "WiFlyClient.h"
 #include "WiFlyServer.h"
 
-// Configuration options
-#define WIFLY_BAUD 1
-
 extern WiFlyDevice WiFly;
 
 #endif

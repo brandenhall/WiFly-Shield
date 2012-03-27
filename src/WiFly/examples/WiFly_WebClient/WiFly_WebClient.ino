@@ -5,15 +5,7 @@
 #include <SC16IS750.h>
 #include <WiFly.h>
 
-
-#include "Credentials.h"
-
-
-byte server[] = { 66, 249, 89, 104 }; // Google
-
-//Client client(server, 80);
-
-WiFlyClient client("google.com", 80);
+WiFlyClient client = WiFlyClient();
 
 void setup() {
   
@@ -23,18 +15,34 @@ void setup() {
   WiFly.setUart(&SC16IS750);
   WiFly.begin();
   
-  if (!WiFly.join(ssid, passphrase)) {
+  WiFly.sendCommand(F("set wlan auth 0"));
+  WiFly.sendCommand(F("set wlan channel 0"));
+  WiFly.sendCommand(F("set ip dhcp 1"));
+  WiFly.sendCommand(F("set comm remote 0"));
+  WiFly.sendCommand(F("set comm open *OPEN*"));
+  WiFly.sendCommand(F("set comm close *CLOS*"));
+  
+  Serial.println(F("Setting things up..."));
+  
+  if (!WiFly.sendCommand(F("join automata_arduino"), "Associated!", 20000, false)) {
     Serial.println("Association failed.");
     while (1) {
       // Hang on failure.
     }
-  }  
-
+  }
+  
+  if (!WiFly.waitForResponse("DHCP in", 10000)) {
+    Serial.println("DHCP failed.");
+    while (1) {
+      // Hang on failure.
+    }
+  }
+  
   Serial.println("connecting...");
-
-  if (client.connect()) {
+  
+  if (client.connect("waxpraxis.org", 80)) {
     Serial.println("connected");
-    client.println("GET /search?q=arduino HTTP/1.0");
+    client.println(F("GET /search?q=arduino HTTP/1.0"));
     client.println();
   } else {
     Serial.println("connection failed");
@@ -43,9 +51,8 @@ void setup() {
 }
 
 void loop() {
-  if (client.available()) {
-    char c = client.read();
-    Serial.print(c);
+  while (client.available()) {
+    Serial.print((char)client.read());
   }
   
   if (!client.connected()) {
