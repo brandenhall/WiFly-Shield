@@ -4,6 +4,8 @@
 
 WiFlyClient::WiFlyClient() : _WiFly (WiFly) {
   connections = 0;
+  closeCmd = "*CLOS*";
+  closeBufferIndex = closeBufferSize = 0;    
 }
 
 // handle connect from server class
@@ -22,7 +24,7 @@ int WiFlyClient::connect(const char* host, uint16_t port) {
   char cmdbuf[len];
   cmd.toCharArray(cmdbuf, len);
 
-  connections = _WiFly.sendCommand(cmdbuf, "*OPEN*", 10000, false);
+  connections = _WiFly.sendCommand(cmdbuf, "*OPEN*", 10000);
 
   return connections;
 }
@@ -43,7 +45,7 @@ int WiFlyClient::connect(IPAddress ip, uint16_t port) {
   char cmdbuf[len];
   cmd.toCharArray(cmdbuf, len);
 
-  connections = _WiFly.sendCommand(cmdbuf, "*OPEN*", 10000, false);
+  connections = _WiFly.sendCommand(cmdbuf, "*OPEN*", 10000);
 
   return connections;
 }
@@ -69,7 +71,7 @@ int WiFlyClient::read() {
     return -1;
   }
 
-  return _WiFly.uart->read();
+  return bufferedRead();
 }
 
 int WiFlyClient::read(uint8_t *buf, size_t size) {
@@ -81,7 +83,7 @@ int WiFlyClient::read(uint8_t *buf, size_t size) {
   }  
 
   for (uint8_t i=0; i<size; ++i) {
-    value = _WiFly.uart->read();
+    value = bufferedRead();
 
     if (value > -1) {
       buf[count] = value;
@@ -93,6 +95,70 @@ int WiFlyClient::read(uint8_t *buf, size_t size) {
   }
 
   return count;
+}
+
+int WiFlyClient::bufferedRead() {
+  int value;
+
+  if (closeBufferSize > 0) {
+    value = closeBuffer[closeBufferIndex];
+
+    ++closeBufferIndex;
+    if (closeBufferIndex == closeBufferSize) {
+      closeBufferIndex = closeBufferSize = 0;
+    }
+
+  } else {
+    value = _WiFly.uart->read();
+
+    while (value != -1 && closeBufferSize < sizeof(closeCmd) && closeCmd[closeBufferSize] == (char)value) {
+      closeBuffer[closeBufferSize] = value;
+
+      while (!_WiFly.uart->available()) {
+        delay(1);
+      }
+
+      value = _WiFly.uart->read();
+      ++closeBufferSize;  
+    }
+
+    // found close, kill connection
+    if (closeBufferSize == sizeof(closeCmd)) {
+      Serial.println("GOT CLOSE!");
+      Serial.println((char)closeBuffer[0]);
+      Serial.println((char)closeBuffer[1]);
+      Serial.println((char)closeBuffer[2]);
+      Serial.println((char)closeBuffer[3]);
+      Serial.println((char)closeBuffer[4]);
+      Serial.println((char)closeBuffer[5]);
+      Serial.println((char)closeBuffer[6]);
+
+      connections = 0;
+      closeBufferSize = 0;
+      closeBufferIndex = 0;
+
+      _WiFly.uart->flush();
+
+      delay(20);
+
+      while (_WiFly.uart->available()) {
+        _WiFly.uart->read();
+      }
+
+      _WiFly.serverConnected = false;
+
+      value = -1;
+
+    // otherwise read from the buffer
+    } else {
+      if (closeBufferSize > 0) {
+        value = closeBuffer[0];
+        closeBufferIndex = 1;
+      }
+    }
+  }
+
+  return value;
 }
 
 int WiFlyClient::peek() {
@@ -113,9 +179,11 @@ void WiFlyClient::flush() {
 void WiFlyClient::stop() {
   _WiFly.sendCommand(F("close"), _WiFly.firmwareVersion);
 
-  reset();
+  connections = 0;
 
-  _WiFly.uart->flush();
+  while (_WiFly.uart->available()) {
+    _WiFly.uart->read();
+  }
 
   _WiFly.serverConnected = false;
 }

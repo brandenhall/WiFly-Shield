@@ -182,14 +182,8 @@ int SC16IS750Device::read() {
   if (!available()) {
     return -1;
   }
-  
-  // int i = readRegister(RHR);
-  // Serial.print((char) i);
 
-  // return i;
-
-
-  return readRegister(RHR);
+  return readRegister(RHR);;
 }
 
 

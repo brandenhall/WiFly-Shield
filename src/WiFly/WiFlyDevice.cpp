@@ -24,7 +24,9 @@ void WiFlyDevice::begin() {
 		delay(250);
 	};
 
-	fullVersion = getCommandResponse("ver");
+	uart->flush();
+
+	fullVersion = getCommandResponse(F("ver"));
 
 	while (fullVersion[index] != ',') {
 		++index;
@@ -35,6 +37,9 @@ void WiFlyDevice::begin() {
 	fullVersion = "<" + fullVersion + ">";
 
 	fullVersion.toCharArray(firmwareVersion, index - 7);
+
+	uart->flush();
+
 }
 
 void WiFlyDevice::sendBareCommand(const __FlashStringHelper* command) {
@@ -66,41 +71,40 @@ String WiFlyDevice::getCommandResponse(const __FlashStringHelper* command) {
 
 	// wait for response
 	while (!uart->available()) {
-		delay(10);
+		delay(5);
 	}
 
 	while (uart->available()) {
-		response += (char)uart->read();
-		delay(1);
+		while (uart->available()) {
+			response += (char)uart->read();
+		}
+		delay(20);
 	}
+
+	exitCommandMode();
 
 	return response;
 }
 
 boolean WiFlyDevice::sendCommand(const __FlashStringHelper* command) {
-	return sendCommand(command, "AOK", 2000, true);
+	return sendCommand(command, "AOK", 2000);
 }
 
 boolean WiFlyDevice::sendCommand(const __FlashStringHelper* command, char* response) {
-	return sendCommand(command, response, 2000, true);
+	return sendCommand(command, response, 2000);
 }
 
 boolean WiFlyDevice::sendCommand(const __FlashStringHelper* command, char* response, int timeout) {
-	return sendCommand(command, response, timeout, true);
-}
-
-boolean WiFlyDevice::sendCommand(const __FlashStringHelper* command, char* response, int timeout, boolean exit) {
 	boolean result;
 
 	sendBareCommand(command);
 
+	uart->flush();
+
 	// wait until the WiFly responds
 	result = waitForResponse(response, timeout);
 
-	if (exit) {
-		uart->flush();
-		exitCommandMode();
-	}
+	exitCommandMode();
 
 	return result;
 }
@@ -112,9 +116,9 @@ void WiFlyDevice::sendBareCommand(char* command) {
 
 	enterCommandMode();
 
-	uart->flush();
 	uart->print(command);
 	uart->write(13);
+	uart->flush();	
 	uart->find("\n");
 }
 
@@ -126,12 +130,14 @@ String WiFlyDevice::getCommandResponse(char* command) {
 
 	// wait for response
 	while (!uart->available()) {
-		delay(10);
+		delay(5);
 	}
 
 	while (uart->available()) {
-		response += (char)uart->read();
-		delay(1);
+		while (uart->available()) {
+			response += (char)uart->read();
+		}
+		delay(20);
 	}
 
 	return response;
@@ -146,10 +152,6 @@ boolean WiFlyDevice::sendCommand(char* command, char* response) {
 }
 
 boolean WiFlyDevice::sendCommand(char* command, char* response, int timeout) {
-	return sendCommand(command, response, timeout, true);
-}
-
-boolean WiFlyDevice::sendCommand(char* command, char* response, int timeout, boolean exit) {
 	boolean result;
 
 	sendBareCommand(command);
@@ -157,12 +159,24 @@ boolean WiFlyDevice::sendCommand(char* command, char* response, int timeout, boo
 	// wait until the WiFly responds
 	result = waitForResponse(response, timeout);
 
-	if (exit) {
-		uart->flush();
-		exitCommandMode();
-	}
+	uart->flush();
+	exitCommandMode();
 
 	return result;
+}
+
+boolean WiFlyDevice::waitForResponse(char* response) {
+	waitForResponse(response, 2000);
+}
+
+boolean WiFlyDevice::waitForResponse(char* response, int timeout) {
+	uart->setTimeout(timeout);
+
+	while (!uart->available()) {
+		delay(10);
+	}
+
+	return uart->find(response);
 }
 
 IPAddress WiFlyDevice::localIP() {
@@ -234,7 +248,7 @@ boolean WiFlyDevice::reboot() {
 
 	// wait a bit until we have data coming in
 	while (!uart->available()) {
-		delay(10);
+		delay(5);
 	}
 	uart->flush();
 
@@ -255,7 +269,7 @@ void WiFlyDevice::enterCommandMode(){
 
 	// wait a bit until we have data coming in
 	while (!uart->available()) {
-		delay(10);
+		delay(5);
 	}
 
 	// make sure we're in command mode
@@ -276,24 +290,11 @@ void WiFlyDevice::exitCommandMode() {
 	uart->print("exit");
 	uart->write(13);
 	uart->find("EXIT");
-	uart->flush();
+	clear();
 
 	commandModeFlag = false;
 }
 
-boolean WiFlyDevice::waitForResponse(char* response) {
-	waitForResponse(response, 2000);
-}
-
-boolean WiFlyDevice::waitForResponse(char* response, int timeout) {
-	uart->setTimeout(timeout);
-
-	while (!uart->available()) {
-		delay(10);
-	}
-
-	return uart->find(response);
-}
 
 IPAddress WiFlyDevice::stringToIPAddress(String str) {
   int max = str.length() + 1;
@@ -310,4 +311,10 @@ IPAddress WiFlyDevice::stringToIPAddress(String str) {
   ip[3] = atoi(strtok_r(NULL, ".", &i));
 
   return ip;
+}
+
+void WiFlyDevice::clear() {
+	while (uart->available()) {
+		uart->read();
+	}
 }
