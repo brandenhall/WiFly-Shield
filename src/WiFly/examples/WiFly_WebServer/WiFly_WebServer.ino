@@ -17,15 +17,16 @@ void setup() {
   
   WiFly.setUart(&SC16IS750);
   
+  Serial.begin(9600);  
+  
   WiFly.begin();
   server.begin();
+  
+  Serial.println("Setting up WiFly...");
   
   WiFly.sendCommand(F("set wlan auth 0"));
   WiFly.sendCommand(F("set wlan channel 0"));
   WiFly.sendCommand(F("set ip dhcp 1"));
-  WiFly.sendCommand(F("set comm remote 0"));
-  WiFly.sendCommand(F("set comm open *OPEN*"));
-  WiFly.sendCommand(F("set comm close *CLOS*"));
 
   if (!WiFly.sendCommand(F("join automata_arduino"), "Associated!", 20000, false)) {
     Serial.println(F("Association failed."));
@@ -41,7 +42,6 @@ void setup() {
     }
   }
 
-  Serial.begin(9600);
   Serial.print("IP: ");
   Serial.println(WiFly.localIP());
   

@@ -26,17 +26,13 @@ WiFlyClient WiFlyServer::available() {
     activeClient.reset();
 
     if (WiFly.uart->available() >= strlen(TOKEN_MATCH_OPEN)) {
-      Serial.println("Got text, lookine for *OPEN*...");
 
       if (WiFly.waitForResponse(TOKEN_MATCH_OPEN, 2000)) {
-
-        Serial.println("Found *OPEN*!");
 
         WiFly.serverConnected = true;
         activeClient.connect();
 
       } else {
-        Serial.println("Didn't find *OPEN*!");
         WiFly.uart->flush();
       }
     }

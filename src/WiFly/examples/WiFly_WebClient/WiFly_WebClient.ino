@@ -10,6 +10,7 @@ WiFlyClient client = WiFlyClient();
 void setup() {
   
   Serial.begin(9600);
+  
   SC16IS750.begin();
   
   WiFly.setUart(&SC16IS750);
@@ -18,9 +19,6 @@ void setup() {
   WiFly.sendCommand(F("set wlan auth 0"));
   WiFly.sendCommand(F("set wlan channel 0"));
   WiFly.sendCommand(F("set ip dhcp 1"));
-  WiFly.sendCommand(F("set comm remote 0"));
-  WiFly.sendCommand(F("set comm open *OPEN*"));
-  WiFly.sendCommand(F("set comm close *CLOS*"));
   
   Serial.println(F("Setting things up..."));
   
@@ -40,7 +38,7 @@ void setup() {
   
   Serial.println("connecting...");
   
-  if (client.connect("waxpraxis.org", 80)) {
+  if (client.connect("google.com", 80)) {
     Serial.println("connected");
     client.println(F("GET /search?q=arduino HTTP/1.0"));
     client.println();
@@ -52,7 +50,11 @@ void setup() {
 
 void loop() {
   while (client.available()) {
-    Serial.print((char)client.read());
+    int i = client.read();
+    
+    if (i > -1) {
+      Serial.print((char) i);
+    }
   }
   
   if (!client.connected()) {

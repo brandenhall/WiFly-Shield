@@ -24,7 +24,7 @@ int WiFlyClient::connect(const char* host, uint16_t port) {
   char cmdbuf[len];
   cmd.toCharArray(cmdbuf, len);
 
-  connections = _WiFly.sendCommand(cmdbuf, "*OPEN*", 10000);
+  connections = _WiFly.sendCommand(cmdbuf, "*OPEN*", 10000, false);
 
   return connections;
 }
@@ -45,7 +45,7 @@ int WiFlyClient::connect(IPAddress ip, uint16_t port) {
   char cmdbuf[len];
   cmd.toCharArray(cmdbuf, len);
 
-  connections = _WiFly.sendCommand(cmdbuf, "*OPEN*", 10000);
+  connections = _WiFly.sendCommand(cmdbuf, "*OPEN*", 10000, false);
 
   return connections;
 }
@@ -124,14 +124,6 @@ int WiFlyClient::bufferedRead() {
 
     // found close, kill connection
     if (closeBufferSize == sizeof(closeCmd)) {
-      Serial.println("GOT CLOSE!");
-      Serial.println((char)closeBuffer[0]);
-      Serial.println((char)closeBuffer[1]);
-      Serial.println((char)closeBuffer[2]);
-      Serial.println((char)closeBuffer[3]);
-      Serial.println((char)closeBuffer[4]);
-      Serial.println((char)closeBuffer[5]);
-      Serial.println((char)closeBuffer[6]);
 
       connections = 0;
       closeBufferSize = 0;
@@ -139,8 +131,10 @@ int WiFlyClient::bufferedRead() {
 
       _WiFly.uart->flush();
 
-      delay(20);
+      // catch any stragglers
+      delay(250);
 
+      // empty the buffer
       while (_WiFly.uart->available()) {
         _WiFly.uart->read();
       }
@@ -154,6 +148,10 @@ int WiFlyClient::bufferedRead() {
       if (closeBufferSize > 0) {
         value = closeBuffer[0];
         closeBufferIndex = 1;
+
+        if (closeBufferIndex == closeBufferSize) {
+          closeBufferIndex = closeBufferSize = 0;
+        }
       }
     }
   }

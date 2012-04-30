@@ -87,14 +87,19 @@ String WiFlyDevice::getCommandResponse(const __FlashStringHelper* command) {
 }
 
 boolean WiFlyDevice::sendCommand(const __FlashStringHelper* command) {
-	return sendCommand(command, "AOK", 2000);
+	return sendCommand(command, "AOK", 2000, true);
 }
 
 boolean WiFlyDevice::sendCommand(const __FlashStringHelper* command, char* response) {
-	return sendCommand(command, response, 2000);
+	return sendCommand(command, response, 2000, true);
 }
 
 boolean WiFlyDevice::sendCommand(const __FlashStringHelper* command, char* response, int timeout) {
+	return sendCommand(command, response, timeout, true);
+}
+
+
+boolean WiFlyDevice::sendCommand(const __FlashStringHelper* command, char* response, int timeout, boolean explicitExit) {
 	boolean result;
 
 	sendBareCommand(command);
@@ -104,7 +109,11 @@ boolean WiFlyDevice::sendCommand(const __FlashStringHelper* command, char* respo
 	// wait until the WiFly responds
 	result = waitForResponse(response, timeout);
 
-	exitCommandMode();
+	if (explicitExit) {
+		exitCommandMode();
+	} else {
+		commandModeFlag = false;
+	}
 
 	return result;
 }
@@ -144,14 +153,18 @@ String WiFlyDevice::getCommandResponse(char* command) {
 }
 
 boolean WiFlyDevice::sendCommand(char* command) {
-	return sendCommand(command, "AOK");
+	return sendCommand(command, "AOK", 2000, true);
 }
 
 boolean WiFlyDevice::sendCommand(char* command, char* response) {
-	return sendCommand(command, response, 2000);
+	return sendCommand(command, response, 2000, true);
 }
 
 boolean WiFlyDevice::sendCommand(char* command, char* response, int timeout) {
+	return sendCommand(command, response, timeout, true);
+}
+
+boolean WiFlyDevice::sendCommand(char* command, char* response, int timeout, boolean explicitExit) {
 	boolean result;
 
 	sendBareCommand(command);
@@ -160,7 +173,12 @@ boolean WiFlyDevice::sendCommand(char* command, char* response, int timeout) {
 	result = waitForResponse(response, timeout);
 
 	uart->flush();
-	exitCommandMode();
+
+	if (explicitExit) {
+		exitCommandMode();
+	} else {
+		commandModeFlag = false;
+	}
 
 	return result;
 }
@@ -289,8 +307,9 @@ void WiFlyDevice::enterCommandMode(){
 void WiFlyDevice::exitCommandMode() {
 	uart->print("exit");
 	uart->write(13);
+
+	uart->setTimeout(1000);
 	uart->find("EXIT");
-	clear();
 
 	commandModeFlag = false;
 }

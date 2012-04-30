@@ -183,7 +183,7 @@ int SC16IS750Device::read() {
     return -1;
   }
 
-  return readRegister(RHR);;
+  return readRegister(RHR);
 }
 
 

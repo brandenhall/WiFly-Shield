@@ -19,13 +19,15 @@ class WiFlyDevice {
     boolean sendCommand(const __FlashStringHelper* command);
     boolean sendCommand(const __FlashStringHelper* command, char* response);
     boolean sendCommand(const __FlashStringHelper* command, char* response, int timeout);
+    boolean sendCommand(const __FlashStringHelper* command, char* response, int timeout, boolean explicitExit);
 
     void sendBareCommand(char* command);
     String getCommandResponse(char* command);
 
     boolean sendCommand(char* command);
     boolean sendCommand(char* command, char* response);
-    boolean sendCommand(char* command, char* response, int timeout);   
+    boolean sendCommand(char* command, char* response, int timeout);
+    boolean sendCommand(char* command, char* response, int timeout, boolean explicitExit); 
 
     boolean waitForResponse(char* response);
     boolean waitForResponse(char* response, int timeout);
